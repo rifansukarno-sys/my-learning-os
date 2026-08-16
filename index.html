@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Learning OS</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script><script src="data/curriculum.js"></script>
+<script src="js/auth.js"></script><script src="js/progress.js"></script>
+</head>
+<body>
+<header><div class="brand">🚀 <span>My Learning OS</span></div><div class="account"><span id="userEmail">Belum login</span><button id="loginBtn" class="primary">Login / Daftar</button><button id="logoutBtn" hidden>Logout</button></div></header>
+<main>
+<section class="hero"><p class="eyebrow">PERSONAL LEARNING DASHBOARD</p><h1>Belajar terstruktur.<br>Checklist per Level.</h1><p>Network Engineer, Data Analyst, Data Scientist, Python Mastery, dan AI Engineer.</p></section>
+<nav id="trackTabs" class="tabs"></nav>
+<section class="stats">
+<div><small>Progress keseluruhan</small><strong id="progressPct">0%</strong><div class="progress"><i id="bar"></i></div></div>
+<div><small>Sudah selesai</small><strong id="doneCount">0</strong><span>level / tahap</span></div>
+<div><small>Masih tersisa</small><strong id="remainCount">0</strong><span>level / tahap</span></div>
+</section>
+<section class="toolbar"><input id="search" placeholder="🔎 Cari level..."><button id="checkAll">☑ Tandai semua</button><button id="clearAll">↩ Kosongkan</button><button id="resetAll" class="danger">♻ Reset track</button></section>
+<section class="listbox"><div class="listhead"><h2 id="trackTitle"></h2><span id="trackCount"></span></div><div id="levelList"></div></section>
+<p class="note">Checklist tersimpan otomatis di browser. Jika Supabase diisi di <code>js/config.js</code>, login dan sinkronisasi dapat memakai akun Supabase.</p>
+</main>
+<dialog id="authModal"><form method="dialog" id="authForm" class="modal"><button type="button" class="x" onclick="this.closest('dialog').close()">×</button><h2 id="authTitle">Login</h2><p id="authError" class="error"></p><label>Email<input id="email" type="email" required autocomplete="email"></label><label>Password<input id="password" type="password" required minlength="6" autocomplete="current-password"></label><button id="authSubmit" class="primary" type="submit">Login</button><button id="authSwitch" type="button" class="link">Belum punya akun? Daftar</button></form></dialog>
+</body></html>
