@@ -320,7 +320,6 @@ function renderList() {
 
 
 </script>
-
 <script>
 const SUPABASE_URL = "https://atspcfinjykoyntitkfe.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_AY-BO4gmv_KdCaB2QjBMFw_hpc7sZvm";
@@ -498,6 +497,14 @@ if (document.readyState === "loading") {
 } else {
   initAuth();
 }
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  try {
+    if (typeof render === "function") render();
+    if (typeof renderClock === "function") renderClock();
+  } catch (e) { console.error("Curriculum render:", e); }
+});
 </script>
 </body>
 </html>
