@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Learning OS</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<section id="authScreen" class="auth">
+  <div class="auth-card">
+    <div class="logo">🚀 My Learning OS</div>
+    <p class="muted">Satu tempat untuk semua perjalanan belajar kamu.</p>
+    <div id="loginFields">
+      <input id="email" type="email" placeholder="Email">
+      <input id="password" type="password" placeholder="Password">
+      <button id="login" class="primary">Login</button>
+      <button id="signup" class="secondary">Buat Akun</button>
+      <button id="forgot" class="link">Lupa password?</button>
+    </div>
+    <div id="recoveryBox" class="hidden">
+      <input id="newPassword" type="password" placeholder="Password baru">
+      <input id="newPassword2" type="password" placeholder="Ulangi password">
+      <button id="updatePassword" class="primary">Simpan Password</button>
+    </div>
+    <div id="authMessage" class="msg"></div>
+  </div>
+</section>
+
+<section id="appScreen" class="hidden">
+<header><div class="brand">🚀 My Learning OS</div><div class="user"><span id="userEmail"></span><button id="logout" class="logout">Logout</button></div></header>
+<main>
+  <div class="hero">
+    <div><h1>Learning Dashboard</h1><div class="muted" id="currentTitle"></div></div>
+    <div class="stats"><div><b>Progress Track: <span id="currentPct">0%</span></b></div><div class="bar"><span id="currentBar"></span></div><div class="muted" style="margin-top:8px">Semua track: <b id="overall">0%</b></div><div class="bar"><span id="overallBar"></span></div></div>
+  </div>
+  <div id="tracks" class="tracks"></div>
+  <div class="tools"><input id="search" placeholder="🔎 Cari materi..."><select id="level"></select><button id="resetTrack" class="reset">Reset track</button></div>
+  <div id="materials"></div>
+</main>
+</section>
+
+<script src="js/config.js"></script>
+<script src="data/curriculum.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/app.js"></script>
+<script>
+document.getElementById("login").onclick=()=>Auth.login();
+document.getElementById("signup").onclick=()=>Auth.signup();
+document.getElementById("forgot").onclick=()=>Auth.reset();
+document.getElementById("updatePassword").onclick=()=>Auth.updatePassword();
+Auth.init();
+</script>
+</body>
+</html>
