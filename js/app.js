@@ -1,4 +1,4 @@
-(() => {
+document.addEventListener("DOMContentLoaded", () => {
   const $=s=>document.querySelector(s);
   let active="network", query="";
   const modal=$("#authModal"), authForm=$("#authForm"), authTitle=$("#authTitle"), authSubmit=$("#authSubmit"), authSwitch=$("#authSwitch");
