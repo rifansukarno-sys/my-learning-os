@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const modal=$("#authModal"), authForm=$("#authForm"), authTitle=$("#authTitle"), authSubmit=$("#authSubmit"), authSwitch=$("#authSwitch");
   let mode="login";
 
-  function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+  function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
   function render(){
     const user=Auth.getUser();
     $("#userEmail").textContent=user?.email||"Belum login";
@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $("#bar").style.width=pct+"%";
     $("#levelList").innerHTML=items.map(x=>`<label class="level ${done.includes(x.id)?"done":""}">
       <input type="checkbox" data-id="${x.id}" ${done.includes(x.id)?"checked":""}>
-      <span>${esc(x.name)}</span>
+      <span class="levelText"><strong>${esc(x.name)}</strong>${x.description?`<small>${esc(x.description)}</small>`:""}</span>
     </label>`).join("") || `<div class="empty">Tidak ada level yang cocok.</div>`;
     $("#trackTitle").textContent=`${t.icon} ${t.title}`;
     $("#trackCount").textContent=`${total} checklist`;
