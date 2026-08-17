@@ -1,0 +1,1 @@
+setInterval(()=>{if(window.bxSupabase)window.supabase=window.bxSupabase},100);
