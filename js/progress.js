@@ -1,15 +1,63 @@
 window.Progress = (() => {
   const KEY="mlo_progress_v1";
-  function load(){try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch{return {}}}
-  function save(x){localStorage.setItem(KEY,JSON.stringify(x)); document.dispatchEvent(new Event("progresschange"))}
+  let cloudRows = {};
+
+  function localLoad(){try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch{return {}}}
+  function localSave(x){localStorage.setItem(KEY,JSON.stringify(x)); document.dispatchEvent(new Event("progresschange"))}
   function userKey(){return window.Auth?.getUser()?.id||"guest"}
-  function get(track){const all=load(); return all[userKey()]?.[track]||[]}
-  function set(track,ids){const all=load(); all[userKey()]??={}; all[userKey()][track]=[...new Set(ids)].sort((a,b)=>a-b); save(all)}
+
+  function get(track){
+    const uid=userKey();
+    if(cloudRows[uid]?.[track]) return cloudRows[uid][track];
+    const all=localLoad(); return all[uid]?.[track]||[];
+  }
+
+  function cache(track,ids){
+    const uid=userKey(); cloudRows[uid]??={};
+    cloudRows[uid][track]=[...new Set(ids)].sort((a,b)=>a-b);
+    const all=localLoad(); all[uid]??={}; all[uid][track]=cloudRows[uid][track]; localSave(all);
+  }
+
+  async function loadFromCloud(){
+    const client=window.Auth?.getClient?.(), uid=window.Auth?.getUser?.()?.id;
+    if(!client||!uid) return;
+    const {data,error}=await client.from("learning_progress").select("track,item_index,completed").eq("user_id",uid);
+    if(error){console.error("Supabase progress load:",error);return;}
+    cloudRows[uid]={};
+    (data||[]).forEach(r=>{if(r.completed){cloudRows[uid][r.track]??=[];cloudRows[uid][r.track].push(Number(r.item_index));}});
+    Object.keys(cloudRows[uid]).forEach(k=>cloudRows[uid][k]=[...new Set(cloudRows[uid][k])].sort((a,b)=>a-b));
+    const all=localLoad(); all[uid]=cloudRows[uid]; localStorage.setItem(KEY,JSON.stringify(all));
+    document.dispatchEvent(new Event("progresschange"));
+  }
+
+  async function sync(track){
+    const client=window.Auth?.getClient?.(), uid=window.Auth?.getUser?.()?.id;
+    if(!client||!uid) return;
+    const ids=get(track);
+    const del=await client.from("learning_progress").delete().eq("user_id",uid).eq("track",track);
+    if(del.error){console.error("Supabase progress delete:",del.error);return;}
+    if(ids.length){
+      const rows=ids.map(item_index=>({user_id:uid,track,item_index,completed:true}));
+      const ins=await client.from("learning_progress").insert(rows);
+      if(ins.error) console.error("Supabase progress insert:",ins.error);
+    }
+  }
+
+  function set(track,ids){
+    cache(track,ids);
+    sync(track);
+  }
   function toggle(track,id){
     const s=new Set(get(track)); s.has(id)?s.delete(id):s.add(id); set(track,[...s]); return s.has(id);
   }
   function clear(track){set(track,[])}
   function all(track,count){set(track,Array.from({length:count},(_,i)=>i))}
-  function resetAll(){const all=load(); delete all[userKey()]; save(all)}
-  return {get,set,toggle,clear,all,resetAll};
+  function resetAll(){
+    const uid=userKey();
+    if(uid!=="guest"){Object.keys(cloudRows[uid]||{}).forEach(k=>sync(k));}
+    const all=localLoad(); delete all[uid]; localSave(all); cloudRows[uid]={};
+  }
+
+  document.addEventListener("authchange",()=>{ if(window.Auth?.getUser?.()) loadFromCloud(); });
+  return {get,set,toggle,clear,all,resetAll,load:loadFromCloud};
 })();
