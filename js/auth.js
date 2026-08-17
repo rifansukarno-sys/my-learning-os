@@ -5,9 +5,9 @@ window.Auth = (() => {
   async function init(){
     const cfg=window.SUPABASE_CONFIG||{};
     if(cfg.url && cfg.anonKey && window.supabase?.createClient){
-      supabase=window.supabase.createClient(cfg.url,cfg.anonKey);
+      supabase=window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
       const {data}=await supabase.auth.getSession();
-      if(data.session) setUser(data.session.user);
+      setUser(data.session?.user||null);
       supabase.auth.onAuthStateChange((_e,s)=>setUser(s?.user||null));
     } else {
       const raw=localStorage.getItem(KEY);
@@ -15,8 +15,15 @@ window.Auth = (() => {
     }
     return getUser();
   }
-  function setUser(u){ window.__MLO_USER=u||null; localStorage.setItem(KEY,u?JSON.stringify(u):""); document.dispatchEvent(new Event("authchange")); }
+
+  function setUser(u){
+    window.__MLO_USER=u||null;
+    if(u) localStorage.setItem(KEY,JSON.stringify(u));
+    else localStorage.removeItem(KEY);
+    document.dispatchEvent(new Event("authchange"));
+  }
   function getUser(){ return window.__MLO_USER||null; }
+  function getClient(){ return supabase; }
 
   async function login(email,password){
     email=email.trim().toLowerCase();
@@ -27,10 +34,11 @@ window.Auth = (() => {
       setUser(data.user); return data.user;
     }
     const users=JSON.parse(localStorage.getItem("mlo_users")||"{}");
-    if(!users[email] || users[email].password!==password) throw new Error("Akun lokal tidak ditemukan atau password salah.");
+    if(!users[email] || users[email].password!==password) throw new Error("Supabase belum dikonfigurasi. Isi js/config.js terlebih dahulu.");
     const u={id:"local-"+btoa(email).replace(/=/g,""),email};
     setUser(u); return u;
   }
+
   async function register(email,password){
     email=email.trim().toLowerCase();
     if(!email||password.length<6) throw new Error("Email wajib dan password minimal 6 karakter.");
@@ -40,14 +48,13 @@ window.Auth = (() => {
       if(data.user) setUser(data.user);
       return data.user;
     }
-    const users=JSON.parse(localStorage.getItem("mlo_users")||"{}");
-    if(users[email]) throw new Error("Email sudah terdaftar.");
-    users[email]={password}; localStorage.setItem("mlo_users",JSON.stringify(users));
-    const u={id:"local-"+btoa(email).replace(/=/g,""),email}; setUser(u); return u;
+    throw new Error("Supabase belum dikonfigurasi. Isi js/config.js terlebih dahulu.");
   }
+
   async function logout(){
     if(supabase) await supabase.auth.signOut();
     setUser(null);
   }
-  return {init,getUser,login,register,logout,isSupabase:()=>!!supabase};
+
+  return {init,getUser,getClient,login,register,logout,isSupabase:()=>!!supabase};
 })();
