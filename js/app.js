@@ -1,37 +1,56 @@
-window.App = (() => {
-  let active=Object.keys(CURRICULUM||{})[0]||"", query="";
-  const $=id=>document.getElementById(id);
-  const pct=k=>{const n=CURRICULUM[k].items.length,d=Progress.get(k).size;return n?Math.round(d/n*100):0};
-  const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-  function renderTabs(){
-    $("trackTabs").innerHTML=Object.entries(CURRICULUM).map(([k,t])=>`<button class="track ${k===active?"active":""}" data-track="${k}">${t.icon||""} ${t.title}<b>${pct(k)}%</b></button>`).join("");
-    document.querySelectorAll("[data-track]").forEach(b=>b.onclick=()=>{active=b.dataset.track;render()});
+document.addEventListener("DOMContentLoaded", () => {
+  const $=s=>document.querySelector(s);
+  let active="network", query="";
+  const modal=$("#authModal"), authForm=$("#authForm"), authTitle=$("#authTitle"), authSubmit=$("#authSubmit"), authSwitch=$("#authSwitch");
+  let mode="login";
+
+  function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+  function render(){
+    const user=Auth.getUser();
+    $("#userEmail").textContent=user?.email||"Belum login";
+    $("#logoutBtn").hidden=!user;
+    $("#loginBtn").hidden=!!user;
+    const t=CURRICULUM[active], done=Progress.get(active), items=t.items.filter(x=>x.name.toLowerCase().includes(query));
+    $("#trackTabs").innerHTML=Object.entries(CURRICULUM).map(([k,v])=>`<button class="tab ${k===active?"active":""}" data-track="${k}">${v.icon} ${esc(v.title)}</button>`).join("");
+    const total=t.items.length, completed=done.length, pct=total?Math.round(completed/total*100):0;
+    $("#progressPct").textContent=pct+"%"; $("#doneCount").textContent=completed; $("#remainCount").textContent=total-completed;
+    $("#bar").style.width=pct+"%";
+    $("#levelList").innerHTML=items.map(x=>`<label class="level ${done.includes(x.id)?"done":""}">
+      <input type="checkbox" data-id="${x.id}" ${done.includes(x.id)?"checked":""}>
+      <span>${esc(x.name)}</span>
+    </label>`).join("") || `<div class="empty">Tidak ada level yang cocok.</div>`;
+    $("#trackTitle").textContent=`${t.icon} ${t.title}`;
+    $("#trackCount").textContent=`${total} checklist`;
   }
-  function renderList(){
-    const t=CURRICULUM[active],done=Progress.get(active);
-    const items=t.items.filter(x=>!query||`${x.name} ${x.section} ${x.levelTitle} ${x.level}`.toLowerCase().includes(query.toLowerCase()));
-    const groups={};items.forEach(x=>(groups[x.level]??=[]).push(x));
-    $("levelList").innerHTML=Object.entries(groups).map(([lv,a])=>{
-      const all=t.items.filter(x=>x.level===Number(lv)),d=all.filter(x=>done.has(x.index)).length,p=all.length?Math.round(d/all.length*100):0;
-      return `<details class="level" open><summary><strong>LEVEL ${lv} — ${a[0]?.levelTitle||""}</strong><span>${d}/${all.length} · ${p}%</span></summary><div class="items">${a.map(x=>`<label class="item ${done.has(x.index)?"done":""}"><input type="checkbox" data-index="${x.index}" ${done.has(x.index)?"checked":""}><span>${esc(x.name).replace(/\n/g,"<br>")}</span></label>`).join("")}</div></details>`;
-    }).join("")||`<div class="empty">Materi tidak ditemukan.</div>`;
-    document.querySelectorAll("[data-index]").forEach(c=>c.onchange=async()=>{await Progress.set(active,+c.dataset.index,c.checked);render()});
-  }
-  function renderStats(){
-    let total=0,done=0;Object.keys(CURRICULUM).forEach(k=>{total+=CURRICULUM[k].items.length;done+=Progress.get(k).size});
-    const p=total?Math.round(done/total*100):0;
-    if($("progressPct"))$("progressPct").textContent=p+"%"; if($("bar"))$("bar").style.width=p+"%";
-    if($("trackTitle"))$("trackTitle").textContent=`${CURRICULUM[active].icon||""} ${CURRICULUM[active].title}`;
-    if($("trackCount"))$("trackCount").textContent=`${Progress.get(active).size}/${CURRICULUM[active].items.length} checklist`;
-    if($("doneCount"))$("doneCount").textContent=done;if($("remainCount"))$("remainCount").textContent=Math.max(total-done,0);
-  }
-  function render(){renderTabs();renderList();renderStats()}
-  function init(){
-    $("search")?.addEventListener("input",e=>{query=e.target.value;renderList()});
-    $("checkAll")?.addEventListener("click",async()=>{for(const x of CURRICULUM[active].items)await Progress.set(active,x.index,true);render()});
-    $("clearAll")?.addEventListener("click",async()=>{for(const x of CURRICULUM[active].items)await Progress.set(active,x.index,false);render()});
-    $("resetAll")?.addEventListener("click",async()=>{if(confirm("Reset semua checklist track ini?")){await Progress.reset(active);render()}});
-    render();
-  }
-  document.addEventListener("DOMContentLoaded",init); return {render};
+
+  function openAuth(m){mode=m; authTitle.textContent=m==="login"?"Login":"Daftar"; authSubmit.textContent=m==="login"?"Login":"Buat akun"; authSwitch.textContent=m==="login"?"Belum punya akun? Daftar":"Sudah punya akun? Login"; $("#authError").textContent=""; authForm.reset(); modal.showModal(); }
+  function closeAuth(){modal.close()}
+  authForm.addEventListener("submit",async e=>{
+    e.preventDefault(); $("#authError").textContent=""; authSubmit.disabled=true;
+    try{
+      const email=$("#email").value,password=$("#password").value;
+      if(mode==="login") await Auth.login(email,password); else await Auth.register(email,password);
+      closeAuth(); render();
+    }catch(err){$("#authError").textContent=err.message||"Gagal memproses akun."}
+    finally{authSubmit.disabled=false}
+  });
+  authSwitch.addEventListener("click",()=>openAuth(mode==="login"?"register":"login"));
+  $("#loginBtn").onclick=()=>openAuth("login");
+  $("#logoutBtn").onclick=()=>Auth.logout().then(render);
+
+  document.addEventListener("click",e=>{
+    const tab=e.target.closest("[data-track]"); if(tab){active=tab.dataset.track; query=""; $("#search").value=""; render();}
+  });
+  $("#levelList").addEventListener("change",e=>{
+    if(!e.target.matches("input[data-id]"))return;
+    Progress.toggle(active,Number(e.target.dataset.id)); render();
+  });
+  $("#search").addEventListener("input",e=>{query=e.target.value.toLowerCase();render()});
+  $("#checkAll").onclick=()=>{Progress.all(active,CURRICULUM[active].items.length);render()};
+  $("#clearAll").onclick=()=>{Progress.clear(active);render()};
+  $("#resetAll").onclick=()=>{if(confirm("Reset semua checklist track ini?")){Progress.clear(active);render()}};
+  document.addEventListener("authchange",render);
+  document.addEventListener("progresschange",render);
+
+  Auth.init().then(render);
 })();
