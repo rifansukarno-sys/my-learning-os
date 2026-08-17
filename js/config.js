@@ -1,4 +1,4 @@
 window.SUPABASE_CONFIG = {
   url: "https://atspcfinjykoyntitkfe.supabase.co",
-  anonKey: "PASTE_YOUR_SUPABASE_ANON_KEY_HERE"
+  anonKey: "sb_publishable_AY-BO4gmv_KdCaB2QjBMFw_hpc7sZvm"
 };
